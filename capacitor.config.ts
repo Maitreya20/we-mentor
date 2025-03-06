@@ -9,6 +9,15 @@ const config: CapacitorConfig = {
     url: 'https://f79ed97d-26ac-4b8f-b992-7127f50e7943.lovableproject.com?forceHideBadge=true',
     cleartext: true
   },
+  android: {
+    buildOptions: {
+      keystorePath: undefined,
+      keystorePassword: undefined,
+      keystoreAlias: undefined,
+      keystoreAliasPassword: undefined,
+      signingType: undefined,
+    }
+  },
   plugins: {
     // Add plugin configurations here if needed
   }
