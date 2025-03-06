@@ -160,7 +160,8 @@ const MentorProfile = () => {
 
   // Get the time slots for the selected date
   const getDayName = (date: Date) => {
-    return date.toLocaleDateString('en-US', { weekday: 'lowercase' });
+    // Fix: change 'lowercase' to 'long' and convert to lowercase afterwards
+    return date.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
   };
   
   const getTimeSlots = () => {
