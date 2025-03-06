@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import MentorProfile from "./pages/MentorProfile";
+import BrowseMentors from "./pages/BrowseMentors";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -18,7 +19,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/browse" element={<NotFound />} />
+          <Route path="/browse" element={<BrowseMentors />} />
           <Route path="/mentor/:id" element={<MentorProfile />} />
           <Route path="/become-mentor" element={<NotFound />} />
           <Route path="/login" element={<NotFound />} />
