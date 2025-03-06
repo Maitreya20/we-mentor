@@ -10,6 +10,16 @@ const Index = () => {
   // After initial mount, set mounted to true to trigger animations
   useEffect(() => {
     setMounted(true);
+
+    // Add meta viewport for better mobile experience
+    const meta = document.createElement('meta');
+    meta.name = 'viewport';
+    meta.content = 'width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no';
+    document.head.appendChild(meta);
+
+    return () => {
+      document.head.removeChild(meta);
+    };
   }, []);
 
   return (
