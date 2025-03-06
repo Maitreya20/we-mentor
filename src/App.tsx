@@ -17,6 +17,13 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/browse" element={<NotFound />} />
+          <Route path="/mentor/:id" element={<NotFound />} />
+          <Route path="/become-mentor" element={<NotFound />} />
+          <Route path="/login" element={<NotFound />} />
+          <Route path="/signup" element={<NotFound />} />
+          <Route path="/pricing" element={<NotFound />} />
+          <Route path="/how-it-works" element={<NotFound />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
