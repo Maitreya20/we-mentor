@@ -1,13 +1,31 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { useEffect, useState } from 'react';
+import { WaterProvider } from '@/contexts/WaterContext';
+import Dashboard from '@/components/Dashboard';
+import { Toaster } from '@/components/ui/sonner';
 
 const Index = () => {
+  const [mounted, setMounted] = useState(false);
+
+  // After initial mount, set mounted to true to trigger animations
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <WaterProvider>
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white relative overflow-hidden">
+        {/* Background decorative elements */}
+        <div className="absolute top-40 left-10 w-72 h-72 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float"></div>
+        <div className="absolute bottom-40 right-10 w-72 h-72 bg-sky-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float"></div>
+        
+        <div className={`transition-all duration-1000 transform ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <Dashboard />
+        </div>
+
+        <Toaster position="bottom-center" />
       </div>
-    </div>
+    </WaterProvider>
   );
 };
 
