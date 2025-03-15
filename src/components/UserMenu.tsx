@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { User, LogOut, Settings, Crown } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { SubscriptionBadge } from "./SubscriptionBadge";
 
 export function UserMenu() {
   const { user, signOut } = useAuth();
@@ -61,12 +62,15 @@ export function UserMenu() {
       <DropdownMenuContent align="end" className="w-56">
         <div className="px-4 py-2">
           <p className="text-sm font-medium">{user.email}</p>
+          <div className="mt-1">
+            <SubscriptionBadge />
+          </div>
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link to="/dashboard" className="cursor-pointer flex w-full items-center">
+          <Link to="/pricing" className="cursor-pointer flex w-full items-center">
             <Crown className="mr-2 h-4 w-4" />
-            My Subscription
+            Manage Subscription
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>

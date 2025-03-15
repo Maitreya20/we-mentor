@@ -15,6 +15,7 @@ import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import { PaymentProvider } from "./contexts/PaymentContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -30,7 +31,14 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/browse" element={<BrowseMentors />} />
               <Route path="/mentor/:id" element={<MentorProfile />} />
-              <Route path="/become-mentor" element={<BecomeMentor />} />
+              <Route 
+                path="/become-mentor" 
+                element={
+                  <ProtectedRoute>
+                    <BecomeMentor />
+                  </ProtectedRoute>
+                } 
+              />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<SignUp />} />
               <Route path="/pricing" element={<Pricing />} />
