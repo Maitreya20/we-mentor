@@ -2,12 +2,32 @@
 import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import { CheckCircle2, X } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { CheckCircle2, X, Loader2 } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/contexts/AuthContext";
+import { usePayment } from "@/contexts/PaymentContext";
+import { toast } from "@/hooks/use-toast";
 
 const Pricing = () => {
+  const { user } = useAuth();
+  const { subscribeToPlan, isProcessing } = usePayment();
+  const navigate = useNavigate();
+
+  const handleSubscribe = async (planType: "free" | "basic" | "pro") => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in or sign up to subscribe to a plan.",
+      });
+      navigate("/login");
+      return;
+    }
+
+    await subscribeToPlan(planType);
+  };
+
   const featuresByPlan = {
     free: [
       { name: "Browse mentor profiles", included: true },
@@ -126,9 +146,25 @@ const Pricing = () => {
                     </ul>
                   </CardContent>
                   <CardFooter>
-                    <Link to="/signup" className="w-full">
-                      <Button variant="outline" className="w-full">Get Started</Button>
-                    </Link>
+                    {user ? (
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => handleSubscribe("free")}
+                        disabled={isProcessing}
+                      >
+                        {isProcessing ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Processing...
+                          </>
+                        ) : "Get Started"}
+                      </Button>
+                    ) : (
+                      <Link to="/signup" className="w-full">
+                        <Button variant="outline" className="w-full">Get Started</Button>
+                      </Link>
+                    )}
                   </CardFooter>
                 </Card>
                 
@@ -164,9 +200,24 @@ const Pricing = () => {
                     </ul>
                   </CardContent>
                   <CardFooter>
-                    <Link to="/signup" className="w-full">
-                      <Button className="w-full">Subscribe Now</Button>
-                    </Link>
+                    {user ? (
+                      <Button 
+                        className="w-full"
+                        onClick={() => handleSubscribe("basic")}
+                        disabled={isProcessing}
+                      >
+                        {isProcessing ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Processing...
+                          </>
+                        ) : "Subscribe Now"}
+                      </Button>
+                    ) : (
+                      <Link to="/signup" className="w-full">
+                        <Button className="w-full">Subscribe Now</Button>
+                      </Link>
+                    )}
                   </CardFooter>
                 </Card>
                 
@@ -199,9 +250,25 @@ const Pricing = () => {
                     </ul>
                   </CardContent>
                   <CardFooter>
-                    <Link to="/signup" className="w-full">
-                      <Button variant="outline" className="w-full">Subscribe Now</Button>
-                    </Link>
+                    {user ? (
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={() => handleSubscribe("pro")}
+                        disabled={isProcessing}
+                      >
+                        {isProcessing ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Processing...
+                          </>
+                        ) : "Subscribe Now"}
+                      </Button>
+                    ) : (
+                      <Link to="/signup" className="w-full">
+                        <Button variant="outline" className="w-full">Subscribe Now</Button>
+                      </Link>
+                    )}
                   </CardFooter>
                 </Card>
               </div>
