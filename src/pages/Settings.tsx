@@ -25,6 +25,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { usePayment } from "@/contexts/PaymentContext";
 import { Check, CreditCard, UserCircle, Bell, Shield, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   firstName: z.string().min(2, {
@@ -43,14 +44,15 @@ const formSchema = z.object({
 type ProfileFormValues = z.infer<typeof formSchema>;
 
 const Settings = () => {
-  const { user, profile, updateProfile, logout } = useAuth();
-  const { subscription } = usePayment();
+  const { user, signOut } = useAuth();
+  const { currentPlan } = usePayment();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [profileData, setProfileData] = useState<{ first_name: string | null, last_name: string | null } | null>(null);
 
   const defaultValues: Partial<ProfileFormValues> = {
-    firstName: profile?.first_name || "",
-    lastName: profile?.last_name || "",
+    firstName: profileData?.first_name || "",
+    lastName: profileData?.last_name || "",
     email: user?.email || "",
     bio: "",
     notifications: false
@@ -63,24 +65,49 @@ const Settings = () => {
   });
 
   useEffect(() => {
-    if (profile) {
-      form.reset({
-        firstName: profile.first_name || "",
-        lastName: profile.last_name || "",
-        email: user?.email || "",
-        bio: "",
-        notifications: false
-      });
+    if (user) {
+      const fetchProfile = async () => {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("first_name, last_name")
+          .eq("id", user.id)
+          .single();
+        
+        if (!error && data) {
+          setProfileData(data);
+          form.reset({
+            firstName: data.first_name || "",
+            lastName: data.last_name || "",
+            email: user?.email || "",
+            bio: "",
+            notifications: false
+          });
+        }
+      };
+
+      fetchProfile();
     }
-  }, [profile, user, form]);
+  }, [user, form]);
 
   const onSubmit = async (data: ProfileFormValues) => {
     setIsLoading(true);
     try {
-      await updateProfile({
+      // Update the profile in Supabase
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          first_name: data.firstName,
+          last_name: data.lastName,
+        })
+        .eq("id", user?.id);
+
+      if (error) throw error;
+
+      setProfileData({
         first_name: data.firstName,
         last_name: data.lastName,
       });
+
       toast({
         title: "Profile updated",
         description: "Your profile has been updated successfully.",
@@ -97,9 +124,9 @@ const Settings = () => {
     }
   };
 
-  const initials = profile
-    ? `${profile.first_name?.charAt(0) || ""}${profile.last_name?.charAt(0) || ""}`
-    : user?.email?.charAt(0).toUpperCase() || "U";
+  const initials = profileData
+    ? `${profileData.first_name?.charAt(0) || ""}${profileData.last_name?.charAt(0) || ""}`
+    : user?.email?.charAt(0)?.toUpperCase() || "U";
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -138,11 +165,11 @@ const Settings = () => {
                 <CardContent>
                   <div className="flex items-center gap-4 mb-6">
                     <Avatar className="h-20 w-20">
-                      <AvatarImage src="" alt={`${profile?.first_name} ${profile?.last_name}`} />
+                      <AvatarImage src="" alt={`${profileData?.first_name} ${profileData?.last_name}`} />
                       <AvatarFallback className="text-lg">{initials}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <h3 className="font-medium">{profile?.first_name} {profile?.last_name}</h3>
+                      <h3 className="font-medium">{profileData?.first_name} {profileData?.last_name}</h3>
                       <p className="text-sm text-gray-500">{user?.email}</p>
                       <Button variant="outline" size="sm" className="mt-2">
                         Change Avatar
@@ -239,16 +266,16 @@ const Settings = () => {
                     <div className="flex justify-between items-center">
                       <div>
                         <h3 className="font-semibold text-lg">
-                          {subscription ? subscription.plan : "Free Plan"}
+                          {currentPlan ? currentPlan : "Free Plan"}
                         </h3>
                         <p className="text-sm text-gray-500">
-                          {subscription 
-                            ? `Renews on ${new Date(subscription.current_period_end).toLocaleDateString()}`
+                          {currentPlan 
+                            ? `Your current plan is ${currentPlan}`
                             : "Limited features available"
                           }
                         </p>
                       </div>
-                      {subscription && (
+                      {currentPlan && (
                         <div className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded text-xs">
                           <Check className="h-3 w-3" />
                           Active
@@ -257,8 +284,8 @@ const Settings = () => {
                     </div>
                   </div>
                   
-                  <Button variant={subscription ? "outline" : "default"}>
-                    {subscription ? "Manage Subscription" : "Upgrade Plan"}
+                  <Button variant={currentPlan ? "outline" : "default"}>
+                    {currentPlan ? "Manage Subscription" : "Upgrade Plan"}
                   </Button>
                 </CardContent>
               </Card>
@@ -329,7 +356,7 @@ const Settings = () => {
                       <Button 
                         variant="outline" 
                         className="flex items-center gap-2"
-                        onClick={() => logout()}
+                        onClick={() => signOut()}
                       >
                         <LogOut className="h-4 w-4" />
                         Sign Out
