@@ -1,185 +1,136 @@
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { toast } from "sonner";
 
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { toast } from '@/components/ui/use-toast';
+interface WaterLogEntry {
+  amount: number;
+  timestamp: string;
+  type?: string;
+}
 
-type WaterIntake = {
-  id: string;
-  amount: number; // in ml
-  timestamp: Date;
-};
-
-type Reminder = {
-  id: string;
-  time: string;
-  active: boolean;
-};
-
-type WaterContextType = {
-  waterIntake: WaterIntake[];
+interface WaterContextType {
+  dailyIntake: number;
   dailyGoal: number;
-  totalIntake: number;
   progress: number;
-  reminders: Reminder[];
-  addWaterIntake: (amount: number) => void;
-  clearIntakeHistory: () => void;
-  setDailyGoal: (amount: number) => void;
-  addReminder: (time: string) => void;
-  toggleReminder: (id: string) => void;
-  removeReminder: (id: string) => void;
-};
+  waterLog: WaterLogEntry[];
+  addWaterIntake: (amount: number, type?: string) => void;
+  resetDailyIntake: () => void;
+  setGoal: (goal: number) => void;
+}
+
+const DEFAULT_DAILY_GOAL = 2000; // 2000ml or 2 liters
 
 const WaterContext = createContext<WaterContextType | undefined>(undefined);
 
-export const WaterProvider = ({ children }: { children: React.ReactNode }) => {
-  const [waterIntake, setWaterIntake] = useState<WaterIntake[]>(() => {
-    const savedIntake = localStorage.getItem('waterIntake');
-    if (savedIntake) {
-      try {
-        const parsed = JSON.parse(savedIntake);
-        return parsed.map((item: any) => ({
-          ...item,
-          timestamp: new Date(item.timestamp)
-        }));
-      } catch (e) {
-        console.error('Failed to parse water intake data:', e);
-        return [];
-      }
+export function WaterProvider({ children }: { children: ReactNode }) {
+  const [dailyIntake, setDailyIntake] = useState(0);
+  const [dailyGoal, setDailyGoal] = useState(DEFAULT_DAILY_GOAL);
+  const [waterLog, setWaterLog] = useState<WaterLogEntry[]>([]);
+  const [currentDate, setCurrentDate] = useState(new Date().toLocaleDateString());
+  
+  // Calculate progress as a percentage
+  const progress = Math.min(Math.round((dailyIntake / dailyGoal) * 100), 100);
+  
+  // Load saved water data from localStorage on component mount
+  useEffect(() => {
+    const today = new Date().toLocaleDateString();
+    const savedDate = localStorage.getItem("water_date");
+    const savedGoal = localStorage.getItem("water_goal");
+    
+    // If it's a new day, reset the intake
+    if (savedDate !== today) {
+      localStorage.setItem("water_date", today);
+      localStorage.setItem("water_intake", "0");
+      localStorage.setItem("water_log", JSON.stringify([]));
+      setDailyIntake(0);
+      setWaterLog([]);
+    } else {
+      // Otherwise load the saved data
+      const savedIntake = localStorage.getItem("water_intake");
+      const savedLog = localStorage.getItem("water_log");
+      
+      if (savedIntake) setDailyIntake(parseInt(savedIntake));
+      if (savedLog) setWaterLog(JSON.parse(savedLog));
     }
-    return [];
-  });
+    
+    if (savedGoal) setDailyGoal(parseInt(savedGoal));
+    setCurrentDate(today);
+  }, []);
   
-  const [dailyGoal, setDailyGoal] = useState<number>(() => {
-    const savedGoal = localStorage.getItem('dailyGoal');
-    return savedGoal ? parseInt(savedGoal, 10) : 2500;
-  });
-  
-  const [reminders, setReminders] = useState<Reminder[]>(() => {
-    const savedReminders = localStorage.getItem('reminders');
-    return savedReminders ? JSON.parse(savedReminders) : [
-      { id: '1', time: '09:00', active: true },
-      { id: '2', time: '12:00', active: true },
-      { id: '3', time: '15:00', active: true },
-      { id: '4', time: '18:00', active: true }
-    ];
-  });
-  
-  // Filter only today's intake
-  const todaysIntake = waterIntake.filter(item => {
-    const today = new Date();
-    const itemDate = new Date(item.timestamp);
-    return (
-      itemDate.getDate() === today.getDate() &&
-      itemDate.getMonth() === today.getMonth() &&
-      itemDate.getFullYear() === today.getFullYear()
-    );
-  });
-  
-  // Calculate total intake for today
-  const totalIntake = todaysIntake.reduce((sum, item) => sum + item.amount, 0);
-  
-  // Calculate progress percentage
-  const progress = Math.min(Math.round((totalIntake / dailyGoal) * 100), 100);
-
-  useEffect(() => {
-    localStorage.setItem('waterIntake', JSON.stringify(waterIntake));
-  }, [waterIntake]);
-
-  useEffect(() => {
-    localStorage.setItem('dailyGoal', dailyGoal.toString());
-  }, [dailyGoal]);
-
-  useEffect(() => {
-    localStorage.setItem('reminders', JSON.stringify(reminders));
-  }, [reminders]);
-
-  const addWaterIntake = (amount: number) => {
-    const newIntake: WaterIntake = {
-      id: Date.now().toString(),
+  // Add water intake
+  const addWaterIntake = (amount: number, type?: string) => {
+    const newIntake = dailyIntake + amount;
+    const newEntry: WaterLogEntry = {
       amount,
-      timestamp: new Date()
+      timestamp: new Date().toISOString(),
+      type
     };
     
-    setWaterIntake(prev => [...prev, newIntake]);
+    const newLog = [newEntry, ...waterLog];
     
-    if (totalIntake + amount >= dailyGoal && totalIntake < dailyGoal) {
-      toast({
-        title: "Daily goal reached! 🎉",
-        description: "Congratulations on staying hydrated today!",
-      });
-    }
-  };
-
-  const clearIntakeHistory = () => {
-    if (confirm('Are you sure you want to clear your intake history?')) {
-      setWaterIntake([]);
-      toast({
-        title: "History cleared",
-        description: "Your water intake history has been reset.",
-      });
-    }
-  };
-
-  const updateDailyGoal = (amount: number) => {
-    setDailyGoal(amount);
-    toast({
-      title: "Daily goal updated",
-      description: `Your daily goal is now ${amount}ml.`,
+    setDailyIntake(newIntake);
+    setWaterLog(newLog);
+    
+    // Save to localStorage
+    localStorage.setItem("water_intake", newIntake.toString());
+    localStorage.setItem("water_log", JSON.stringify(newLog));
+    
+    // Show toast notification
+    toast.success(`Added ${amount}ml of water!`, {
+      description: progress >= 100 
+        ? "You've reached your daily goal! 🎉" 
+        : `Progress: ${progress}% of daily goal`,
+      duration: 3000,
     });
   };
-
-  const addReminder = (time: string) => {
-    const newReminder: Reminder = {
-      id: Date.now().toString(),
-      time,
-      active: true
+  
+  // Reset daily intake
+  const resetDailyIntake = () => {
+    setDailyIntake(0);
+    setWaterLog([]);
+    localStorage.setItem("water_intake", "0");
+    localStorage.setItem("water_log", JSON.stringify([]));
+  };
+  
+  // Set daily goal
+  const setGoal = (goal: number) => {
+    setDailyGoal(goal);
+    localStorage.setItem("water_goal", goal.toString());
+  };
+  
+  // Check for day change
+  useEffect(() => {
+    const checkDate = () => {
+      const today = new Date().toLocaleDateString();
+      if (currentDate !== today) {
+        resetDailyIntake();
+        setCurrentDate(today);
+        localStorage.setItem("water_date", today);
+      }
     };
     
-    setReminders(prev => [...prev, newReminder]);
-    toast({
-      title: "Reminder set",
-      description: `You'll be reminded to drink water at ${time}.`,
-    });
+    // Check date every minute
+    const interval = setInterval(checkDate, 60000);
+    return () => clearInterval(interval);
+  }, [currentDate]);
+  
+  const value = {
+    dailyIntake,
+    dailyGoal,
+    progress,
+    waterLog,
+    addWaterIntake,
+    resetDailyIntake,
+    setGoal
   };
+  
+  return <WaterContext.Provider value={value}>{children}</WaterContext.Provider>;
+}
 
-  const toggleReminder = (id: string) => {
-    setReminders(prev => 
-      prev.map(reminder => 
-        reminder.id === id 
-          ? { ...reminder, active: !reminder.active } 
-          : reminder
-      )
-    );
-  };
-
-  const removeReminder = (id: string) => {
-    setReminders(prev => prev.filter(reminder => reminder.id !== id));
-  };
-
-  return (
-    <WaterContext.Provider
-      value={{
-        waterIntake: todaysIntake,
-        dailyGoal,
-        totalIntake,
-        progress,
-        reminders,
-        addWaterIntake,
-        clearIntakeHistory,
-        setDailyGoal: updateDailyGoal,
-        addReminder,
-        toggleReminder,
-        removeReminder,
-      }}
-    >
-      {children}
-    </WaterContext.Provider>
-  );
-};
-
-export const useWater = () => {
+// Custom hook to use the water context
+export function useWater() {
   const context = useContext(WaterContext);
   if (context === undefined) {
-    throw new Error('useWater must be used within a WaterProvider');
+    throw new Error("useWater must be used within a WaterProvider");
   }
   return context;
-};
+}

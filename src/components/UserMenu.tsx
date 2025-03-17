@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { User, LogOut, Settings, Crown } from "lucide-react";
+import { User, LogOut, Settings, Crown, LayoutDashboard } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { SubscriptionBadge } from "./SubscriptionBadge";
 
@@ -67,6 +67,12 @@ export function UserMenu() {
           </div>
         </div>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to="/dashboard" className="cursor-pointer flex w-full items-center">
+            <LayoutDashboard className="mr-2 h-4 w-4" />
+            Dashboard
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link to="/pricing" className="cursor-pointer flex w-full items-center">
             <Crown className="mr-2 h-4 w-4" />
