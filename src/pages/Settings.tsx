@@ -1,236 +1,347 @@
 
-import { useState } from "react";
-import { NavBar } from "@/components/NavBar";
-import { Footer } from "@/components/Footer";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Label } from "@/components/ui/label";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import { NavBar } from "@/components/NavBar";
+import { Footer } from "@/components/Footer";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { usePayment } from "@/contexts/PaymentContext";
+import { Check, CreditCard, UserCircle, Bell, Shield, LogOut } from "lucide-react";
+
+const formSchema = z.object({
+  firstName: z.string().min(2, {
+    message: "First name must be at least 2 characters.",
+  }),
+  lastName: z.string().min(2, {
+    message: "Last name must be at least 2 characters.",
+  }),
+  email: z.string().email({
+    message: "Please enter a valid email address.",
+  }),
+  bio: z.string().optional(),
+  notifications: z.boolean().default(false),
+});
+
+type ProfileFormValues = z.infer<typeof formSchema>;
 
 const Settings = () => {
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [profile, setProfile] = useState({
-    firstName: "",
-    lastName: "",
+  const { user, profile, updateProfile, logout } = useAuth();
+  const { subscription } = usePayment();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const defaultValues: Partial<ProfileFormValues> = {
+    firstName: profile?.first_name || "",
+    lastName: profile?.last_name || "",
+    email: user?.email || "",
     bio: "",
-    receiveNotifications: true
+    notifications: false
+  };
+
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues,
+    mode: "onChange",
   });
 
-  // Fetch user profile data
-  useState(() => {
-    const fetchProfile = async () => {
-      if (!user) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .single();
-          
-        if (error) throw error;
-        
-        if (data) {
-          setProfile({
-            firstName: data.first_name || "",
-            lastName: data.last_name || "",
-            bio: data.bio || "",
-            receiveNotifications: data.receive_notifications !== false
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching profile:", error);
-      }
-    };
-    
-    fetchProfile();
-  });
-  
-  const handleProfileUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!user) return;
-    
-    setLoading(true);
-    
+  useEffect(() => {
+    if (profile) {
+      form.reset({
+        firstName: profile.first_name || "",
+        lastName: profile.last_name || "",
+        email: user?.email || "",
+        bio: "",
+        notifications: false
+      });
+    }
+  }, [profile, user, form]);
+
+  const onSubmit = async (data: ProfileFormValues) => {
+    setIsLoading(true);
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          first_name: profile.firstName,
-          last_name: profile.lastName,
-          bio: profile.bio,
-          receive_notifications: profile.receiveNotifications,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", user.id);
-        
-      if (error) throw error;
-      
+      await updateProfile({
+        first_name: data.firstName,
+        last_name: data.lastName,
+      });
       toast({
         title: "Profile updated",
-        description: "Your profile has been successfully updated.",
+        description: "Your profile has been updated successfully.",
       });
-    } catch (error: any) {
+    } catch (error) {
+      console.error(error);
       toast({
+        title: "Error updating profile",
+        description: "There was an error updating your profile. Please try again.",
         variant: "destructive",
-        title: "Update failed",
-        description: error.message || "Failed to update profile."
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
-  
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setProfile(prev => ({ ...prev, [name]: value }));
-  };
-  
-  const handleSwitchChange = (checked: boolean) => {
-    setProfile(prev => ({ ...prev, receiveNotifications: checked }));
-  };
+
+  const initials = profile
+    ? `${profile.first_name?.charAt(0) || ""}${profile.last_name?.charAt(0) || ""}`
+    : user?.email?.charAt(0).toUpperCase() || "U";
 
   return (
     <div className="min-h-screen flex flex-col">
       <NavBar />
-      
-      <main className="flex-1 py-12 container mx-auto px-4">
-        <h1 className="text-3xl font-bold mb-8">Account Settings</h1>
-        
-        <Tabs defaultValue="profile" className="w-full max-w-4xl mx-auto">
-          <TabsList className="mb-6">
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="account">Account</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="profile">
-            <Card>
-              <CardHeader>
-                <CardTitle>Profile Information</CardTitle>
-                <CardDescription>
-                  Update your personal information visible to other users
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleProfileUpdate} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName">First Name</Label>
-                      <Input 
-                        id="firstName" 
-                        name="firstName"
-                        value={profile.firstName}
-                        onChange={handleInputChange}
-                        placeholder="Your first name"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Last Name</Label>
-                      <Input 
-                        id="lastName" 
-                        name="lastName"
-                        value={profile.lastName}
-                        onChange={handleInputChange}
-                        placeholder="Your last name"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="bio">Bio</Label>
-                    <Textarea 
-                      id="bio" 
-                      name="bio"
-                      value={profile.bio}
-                      onChange={handleInputChange}
-                      placeholder="Tell us a bit about yourself"
-                      rows={4}
-                    />
-                  </div>
-                  
-                  <Button type="submit" disabled={loading}>
-                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save Changes
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="account">
-            <Card>
-              <CardHeader>
-                <CardTitle>Account Security</CardTitle>
-                <CardDescription>
-                  Manage your account security settings
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input 
-                    id="email" 
-                    value={user?.email || ""}
-                    disabled
-                    readOnly
-                  />
-                  <p className="text-sm text-gray-500">
-                    To change your email, please contact support
-                  </p>
-                </div>
-                
-                <div>
-                  <Button variant="outline">Change Password</Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="notifications">
-            <Card>
-              <CardHeader>
-                <CardTitle>Notification Preferences</CardTitle>
-                <CardDescription>
-                  Manage how you receive notifications
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+      <div className="flex-1 container mx-auto py-8 px-4">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-3xl font-bold mb-8">Settings</h1>
+          <Tabs defaultValue="account" className="w-full">
+            <TabsList className="grid grid-cols-4 mb-8">
+              <TabsTrigger value="account" className="flex items-center gap-2">
+                <UserCircle className="h-4 w-4" />
+                <span className="hidden sm:inline">Account</span>
+              </TabsTrigger>
+              <TabsTrigger value="billing" className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                <span className="hidden sm:inline">Billing</span>
+              </TabsTrigger>
+              <TabsTrigger value="notifications" className="flex items-center gap-2">
+                <Bell className="h-4 w-4" />
+                <span className="hidden sm:inline">Notifications</span>
+              </TabsTrigger>
+              <TabsTrigger value="security" className="flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                <span className="hidden sm:inline">Security</span>
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="account">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Account Information</CardTitle>
+                  <CardDescription>
+                    Update your account information and profile details.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4 mb-6">
+                    <Avatar className="h-20 w-20">
+                      <AvatarImage src="" alt={`${profile?.first_name} ${profile?.last_name}`} />
+                      <AvatarFallback className="text-lg">{initials}</AvatarFallback>
+                    </Avatar>
                     <div>
-                      <Label htmlFor="notifications" className="text-base">Email Notifications</Label>
-                      <p className="text-sm text-gray-500">
-                        Receive notifications about mentorship sessions and updates
-                      </p>
+                      <h3 className="font-medium">{profile?.first_name} {profile?.last_name}</h3>
+                      <p className="text-sm text-gray-500">{user?.email}</p>
+                      <Button variant="outline" size="sm" className="mt-2">
+                        Change Avatar
+                      </Button>
                     </div>
-                    <Switch 
-                      id="notifications" 
-                      checked={profile.receiveNotifications} 
-                      onCheckedChange={handleSwitchChange}
-                    />
                   </div>
                   
-                  <Button onClick={handleProfileUpdate} disabled={loading}>
-                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save Preferences
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="firstName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>First Name</FormLabel>
+                              <FormControl>
+                                <Input placeholder="John" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="lastName"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Last Name</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Doe" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input placeholder="john.doe@example.com" {...field} disabled />
+                            </FormControl>
+                            <FormDescription>
+                              Your email is used for login and notifications.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="bio"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Bio</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Tell us a bit about yourself" 
+                                className="resize-none" 
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <Button type="submit" disabled={isLoading}>
+                        {isLoading ? "Saving..." : "Save Changes"}
+                      </Button>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="billing">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Subscription Plan</CardTitle>
+                  <CardDescription>
+                    Manage your subscription and payment details.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h3 className="font-semibold text-lg">
+                          {subscription ? subscription.plan : "Free Plan"}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {subscription 
+                            ? `Renews on ${new Date(subscription.current_period_end).toLocaleDateString()}`
+                            : "Limited features available"
+                          }
+                        </p>
+                      </div>
+                      {subscription && (
+                        <div className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded text-xs">
+                          <Check className="h-3 w-3" />
+                          Active
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <Button variant={subscription ? "outline" : "default"}>
+                    {subscription ? "Manage Subscription" : "Upgrade Plan"}
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </main>
-      
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="notifications">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Notification Settings</CardTitle>
+                  <CardDescription>
+                    Configure how and when you want to be notified.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="notifications"
+                    render={({ field }) => (
+                      <FormItem className="flex items-start space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>Email Notifications</FormLabel>
+                          <FormDescription>
+                            Receive email notifications about new messages, session reminders, and updates.
+                          </FormDescription>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+                <CardFooter>
+                  <Button onClick={form.handleSubmit(onSubmit)} disabled={isLoading}>
+                    {isLoading ? "Saving..." : "Save Notification Settings"}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="security">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Security Settings</CardTitle>
+                  <CardDescription>
+                    Manage your account security settings.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="font-medium">Password</h3>
+                    <p className="text-sm text-gray-500">
+                      Change your password to keep your account secure.
+                    </p>
+                    <Button variant="outline">Change Password</Button>
+                  </div>
+                  
+                  <div className="pt-4 border-t space-y-2">
+                    <h3 className="font-medium text-red-600">Danger Zone</h3>
+                    <p className="text-sm text-gray-500">
+                      Once you delete your account, there is no going back. Please be certain.
+                    </p>
+                    <div className="flex space-x-4">
+                      <Button variant="destructive">Delete Account</Button>
+                      <Button 
+                        variant="outline" 
+                        className="flex items-center gap-2"
+                        onClick={() => logout()}
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Sign Out
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
       <Footer />
     </div>
   );

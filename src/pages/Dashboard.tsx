@@ -1,21 +1,15 @@
 
-import { useState, useEffect } from "react";
 import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
-import { WaterContainer } from "@/components/WaterContainer";
-import { WaterAmountButton } from "@/components/WaterAmountButton";
-import { useWater } from "@/contexts/WaterContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Droplets, Calendar, Award, ArrowUpRight } from "lucide-react";
+import { Calendar, Award, ArrowUpRight } from "lucide-react";
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const { progress, dailyIntake, dailyGoal, waterLog } = useWater();
-  const [today] = useState(new Date());
+  const today = new Date();
   
   // Format date as "Monday, January 1"
   const formattedDate = today.toLocaleDateString('en-US', {
@@ -32,70 +26,9 @@ const Dashboard = () => {
         <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
         <p className="text-gray-600 mb-8">{formattedDate}</p>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left sidebar with water tracker */}
-          <div className="lg:col-span-1">
-            <Card className="mb-6">
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center">
-                  <Droplets className="h-5 w-5 mr-2 text-blue-500" />
-                  Water Intake
-                </CardTitle>
-                <CardDescription>Track your daily hydration</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col items-center space-y-6 py-4">
-                  <WaterContainer className="h-64 w-64" showPercentage />
-                  
-                  <div className="w-full space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Daily intake: {dailyIntake}ml</span>
-                      <span>Goal: {dailyGoal}ml</span>
-                    </div>
-                    <Progress value={progress} className="h-2" />
-                  </div>
-                  
-                  <WaterAmountButton />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center">
-                  <Calendar className="h-5 w-5 mr-2 text-blue-500" />
-                  Recent Activity
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {waterLog.slice(0, 5).map((entry, index) => (
-                    <div key={index} className="flex justify-between items-center text-sm border-b border-gray-100 pb-2">
-                      <div>
-                        <span className="font-medium">+{entry.amount}ml</span>
-                        <span className="text-gray-500 ml-2">{entry.type || "Water"}</span>
-                      </div>
-                      <div className="text-gray-500">
-                        {new Date(entry.timestamp).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {waterLog.length === 0 && (
-                    <div className="text-center py-6 text-gray-500">
-                      No activity recorded today
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          
+        <div className="grid grid-cols-1 gap-8">
           {/* Main content area with mentorship dashboard */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6">
             <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
               <CardContent className="pt-6">
                 <div className="flex justify-between items-start">

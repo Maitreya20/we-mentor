@@ -34,9 +34,6 @@
     --ring: 222.2 84% 4.9%;
  
     --radius: 0.5rem;
-    
-    --water-300: 200 100% 70%;
-    --water-400: 200 100% 50%;
   }
  
   .dark {
@@ -77,59 +74,4 @@
   body {
     @apply bg-background text-foreground;
   }
-}
-
-/* Water animations */
-.water-wave {
-  position: absolute;
-  width: 200%;
-  height: 200%;
-  top: -75%;
-  left: -50%;
-  border-radius: 40%;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.water-wave.front {
-  transition: all 2s ease;
-  animation-name: wave;
-  animation-duration: 5s;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-}
-
-.water-wave.back {
-  transition: all 2s ease;
-  animation-name: wave;
-  animation-duration: 7s;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-  opacity: 0.3;
-}
-
-@keyframes wave {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes ripple {
-  to {
-    transform: scale(4);
-    opacity: 0;
-  }
-}
-
-.animate-ripple {
-  animation: ripple 0.7s ease-out;
-}
-
-.animate-wave {
-  animation-name: wave;
-  animation-duration: 5s;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
 }
