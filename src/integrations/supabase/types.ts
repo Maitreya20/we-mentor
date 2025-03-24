@@ -60,12 +60,56 @@ export type Database = {
         }
         Relationships: []
       }
+      transactions: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          id: string
+          is_fraud: boolean | null
+          location: string | null
+          merchant: string
+          risk_score: number | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          id?: string
+          is_fraud?: boolean | null
+          location?: string | null
+          merchant: string
+          risk_score?: number | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          id?: string
+          is_fraud?: boolean | null
+          location?: string | null
+          merchant?: string
+          risk_score?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      analyze_transaction: {
+        Args: {
+          p_amount: number
+          p_merchant: string
+          p_category: string
+          p_location: string
+        }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
