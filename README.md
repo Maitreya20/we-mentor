@@ -34,8 +34,8 @@ Before you begin, ensure you have the following installed:
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/mentorship-platform.git
-cd mentorship-platform
+git clone https://github.com/Maitreya20/we-mentor.git
+cd we-mentor
 ```
 
 ### 2. Install dependencies
@@ -150,5 +150,3 @@ If you encounter any issues or have questions:
 - Icons by [Lucide](https://lucide.dev/)
 
 ---
-
-**Note**: Replace `yourusername` with your actual GitHub username and update the repository URL accordingly.
